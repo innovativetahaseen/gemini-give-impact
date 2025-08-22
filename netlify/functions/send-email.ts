@@ -3,19 +3,19 @@ import nodemailer from "nodemailer";
 
 const handler: Handler = async (event) => {
   try {
-    let name = "Test User";
-    let email = process.env.EMAIL_USER; // default: send to yourself
-    let message = "This is a test email from Netlify! 🎉";
+    let donorName = "Test User";
+    let donorEmail = "";
+    let donorMessage = "This is a test email from Netlify! 🎉";
 
-    // If body exists, override with donor data
+    // If request has body, extract donor info
     if (event.body) {
       const body = JSON.parse(event.body);
-      if (body.name) name = body.name;
-      if (body.email) email = body.email;
-      if (body.message) message = body.message;
+      if (body.name) donorName = body.name;
+      if (body.email) donorEmail = body.email;
+      if (body.message) donorMessage = body.message;
     }
 
-    // Configure transporter
+    // Configure transporter with Gmail + App Password
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -24,16 +24,16 @@ const handler: Handler = async (event) => {
       },
     });
 
-    // Send email
+    // Send email (to donor if provided, else to yourself)
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
-      to: email,                // if no body, goes to yourself
-      replyTo: event.body ? email : undefined, // if donor, allow replies
-      subject: event.body
+      to: donorEmail || process.env.EMAIL_USER,
+      replyTo: donorEmail || undefined,
+      subject: donorEmail
         ? "🙏 Thank you for your donation!"
         : "✅ Test email from Netlify",
-      text: event.body
-        ? `Hi ${name},\n\nThank you for your kind donation. ${message}\n\n- The Team`
+      text: donorEmail
+        ? `Hi ${donorName},\n\nThank you for your kind donation. ${donorMessage}\n\n- The Team`
         : "This is a test email to confirm your Netlify function works.",
     });
 
@@ -42,6 +42,7 @@ const handler: Handler = async (event) => {
       body: JSON.stringify({ success: true, message: "Email sent successfully" }),
     };
   } catch (error: any) {
+    console.error("Email error:", error.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ success: false, error: error.message }),
