@@ -39,7 +39,7 @@ const DonationForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = getCurrentAmount();
-    
+
     if (amount < 5) {
       toast({
         title: "Minimum Donation",
@@ -61,25 +61,41 @@ const DonationForm = () => {
     setIsLoading(true);
 
     try {
-      // TODO: Integrate with Stripe for actual payment processing
-      // For now, simulate the process
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast({
-        title: "Thank You!",
-        description: `Your donation of $${amount} is being processed. You'll receive a confirmation email shortly.`,
+      // Call Netlify send-email function
+      const response = await fetch("/.netlify/functions/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: donorInfo.name,
+          email: donorInfo.email,
+          message: donorInfo.message || `Thank you for donating $${amount}!`
+        }),
       });
 
-      // Reset form
-      setSelectedAmount(null);
-      setCustomAmount("");
-      setDonorInfo({ name: "", email: "", message: "" });
-      
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "Thank You!",
+          description: `Your donation of $${amount} was received. A confirmation email has been sent.`,
+        });
+
+        // Reset form
+        setSelectedAmount(null);
+        setCustomAmount("");
+        setDonorInfo({ name: "", email: "", message: "" });
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Something went wrong. Please try again.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",
-        description: "There was an issue processing your donation. Please try again.",
-        variant: "destructive"
+        description: "Unable to process your donation. Please try again later.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);

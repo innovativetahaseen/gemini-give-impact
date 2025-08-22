@@ -3,22 +3,38 @@ import nodemailer from "nodemailer";
 
 const handler: Handler = async (event) => {
   try {
-    const { name, email, message } = JSON.parse(event.body || "{}");
+    let name = "Test User";
+    let email = process.env.EMAIL_USER; // default: send to yourself
+    let message = "This is a test email from Netlify! 🎉";
 
-    // Configure your SMTP transporter (use Gmail, Outlook, or any SMTP service)
+    // If body exists, override with donor data
+    if (event.body) {
+      const body = JSON.parse(event.body);
+      if (body.name) name = body.name;
+      if (body.email) email = body.email;
+      if (body.message) message = body.message;
+    }
+
+    // Configure transporter
     const transporter = nodemailer.createTransport({
-      service: "gmail", // change if you use Outlook/Zoho/etc.
+      service: "gmail",
       auth: {
-        user: process.env.EMAIL_USER, // stored in Netlify environment variable
-        pass: process.env.EMAIL_PASS, // stored in Netlify environment variable
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
 
+    // Send email
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
-      to: email, // donor’s email
-      subject: "🙏 Thank you for your donation!",
-      text: `Hi ${name},\n\nThank you for your kind donation. ${message}\n\n- The Team`,
+      to: email,                // if no body, goes to yourself
+      replyTo: event.body ? email : undefined, // if donor, allow replies
+      subject: event.body
+        ? "🙏 Thank you for your donation!"
+        : "✅ Test email from Netlify",
+      text: event.body
+        ? `Hi ${name},\n\nThank you for your kind donation. ${message}\n\n- The Team`
+        : "This is a test email to confirm your Netlify function works.",
     });
 
     return {

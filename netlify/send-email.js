@@ -1,4 +1,6 @@
 const nodemailer = require("nodemailer");
+require("dotenv").config();
+
 
 exports.handler = async (event, context) => {
   try {
