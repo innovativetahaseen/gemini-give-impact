@@ -72,17 +72,17 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-accent" />
-                <span className="text-primary-foreground/80">hello@socialgood.org</span>
+                <span className="text-primary-foreground/80">tahaseen.khan_gla.aiml24@gla.ac.in</span>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-accent" />
-                <span className="text-primary-foreground/80">(555) 123-4567</span>
+                <span className="text-primary-foreground/80">7302976860</span>
               </div>
               <div className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 text-accent mt-1" />
                 <span className="text-primary-foreground/80">
-                  123 Community Street<br />
-                  Impact City, IC 12345
+                  GLA University<br />
+                  Mathura, UP, India
                 </span>
               </div>
             </div>
