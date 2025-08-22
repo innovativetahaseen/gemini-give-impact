@@ -14,7 +14,7 @@ exports.handler = async (event, context) => {
     // Send email
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
-      to: "yourfriend@example.com", // 👈 change this to your real email
+      to: "tahaseenk56@gmail.com", // 👈 change this to your real email
       subject: "Test email from Netlify",
       text: "Hello! This is a test email sent from my Netlify function 🎉"
     });
