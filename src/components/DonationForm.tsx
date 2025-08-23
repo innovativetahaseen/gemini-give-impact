@@ -61,40 +61,73 @@ const DonationForm = () => {
     setIsLoading(true);
 
     try {
-      // Call Netlify send-email function
-      const response = await fetch("/.netlify/functions/send-email", {
+      // 1. Create order from Netlify function
+      const orderResponse = await fetch("/.netlify/functions/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: donorInfo.name,
-          email: donorInfo.email,
-          message: donorInfo.message || `Thank you for donating $${amount}!`
-        }),
+        body: JSON.stringify({ amount: amount * 100 }) // Razorpay works in paise
       });
 
-      const data = await response.json();
+      const orderData = await orderResponse.json();
 
-      if (data.success) {
-        toast({
-          title: "Thank You!",
-          description: `Your donation of $${amount} was received. A confirmation email has been sent.`,
-        });
-
-        // Reset form
-        setSelectedAmount(null);
-        setCustomAmount("");
-        setDonorInfo({ name: "", email: "", message: "" });
-      } else {
-        toast({
-          title: "Error",
-          description: data.error || "Something went wrong. Please try again.",
-          variant: "destructive",
-        });
+      if (!orderData.success) {
+        throw new Error(orderData.error || "Unable to create order");
       }
+
+      const { order } = orderData;
+
+      // 2. Load Razorpay checkout
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Public key
+        amount: order.amount,
+        currency: order.currency,
+        name: "Social Good Initiative",
+        description: "Donation",
+        order_id: order.id,
+        prefill: {
+          name: donorInfo.name,
+          email: donorInfo.email,
+        },
+        theme: { color: "#3399cc" },
+        handler: async function (response: any) {
+          toast({
+            title: "Thank You!",
+            description: `Your donation of $${amount} was successful!`,
+          });
+
+          // Reset form
+          setSelectedAmount(null);
+          setCustomAmount("");
+          setDonorInfo({ name: "", email: "", message: "" });
+
+          // Optionally call send-email
+          await fetch("/.netlify/functions/send-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: donorInfo.name,
+              email: donorInfo.email,
+              message: donorInfo.message || `Thank you for donating $${amount}!`
+            }),
+          });
+        },
+        modal: {
+          ondismiss: () => {
+            toast({
+              title: "Cancelled",
+              description: "Donation process was cancelled.",
+              variant: "destructive",
+            });
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Unable to process your donation. Please try again later.",
+        description: (error as Error).message || "Unable to process your donation.",
         variant: "destructive",
       });
     } finally {
